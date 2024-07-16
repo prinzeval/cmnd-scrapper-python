@@ -1,63 +1,99 @@
-# from typing import List
-# from scrapper.AllUrlsScrape import king_url
-# import requests
-# from bs4 import BeautifulSoup
-# from models import ScrapedBaseUrl
+import requests
+from bs4 import BeautifulSoup
+from typing import List
+from datetime import datetime, timedelta
+from database import get_supabase_client
 
-# def process_url(url: str) -> Tuple[str, str, List[str]]:
-#     response = requests.get(url)
-#     if response.status_code == 200:
-#         print(f"Successfully fetched the URL: {url}")
-#     else:
-#         print(f"Failed to fetch the URL: {url} with status code {response.status_code}")
-#         return url, "No title found", []
+# Define functions to check whitelist and blacklist
+def is_in_whitelist(url, whitelist):
+    if not whitelist:  # If whitelist is empty, consider it as passing all URLs
+        return True
+    for item in whitelist:
+        if item in url:  # Check if whitelist item is a substring of the URL
+            return True
+    return False
 
-#     soup = BeautifulSoup(response.content, 'html.parser')
+def is_in_blacklist(url, blacklist):
+    for item in blacklist:
+        if item in url:  # Check if blacklist item is a substring of the URL
+            return True
+    return False
 
-#     for a in soup.find_all('a'):
-#         a.decompose()
+# Function to bring data from URLs and process them
+def bring_data(needed_data: List[str], whitelist: List[str], blacklist: List[str]):
+    print("All list extracted:", needed_data)
 
-#     for unwanted in soup.find_all(['script', 'style', 'aside', 'footer', 'header', 'nav']):
-#         unwanted.decompose()
+    # Get Supabase client
+    supabase = get_supabase_client()
 
-#     for unwanted in soup.find_all(['div', 'section'], {'class': ['bw-wrapper']}):
-#         unwanted.decompose()
+    try:
+        for url in needed_data:
+            # Check whitelist and blacklist
+            if not is_in_whitelist(url, whitelist) or is_in_blacklist(url, blacklist):
+                print(f"Skipping URL: {url} due to whitelist or blacklist settings.")
+                continue
 
-#     for unwanted in soup.find_all('h2', string="Recommended articles"):
-#         unwanted.decompose()
+            # Check if the URL already exists in the database
+            existing_data = supabase.table("scrapperDB").select("*").eq("url", url).execute()
+            if existing_data.data:
+                print(f"Data for URL: {url} already exists in the database.")
+                continue
 
-#     title_element = soup.find(lambda tag: tag.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'title'])
-#     title = title_element.text if title_element else "No title found"
+            # Perform the HTTP request
+            response = requests.get(url)
+            if response.status_code == 200:
+                print(f"Successfully fetched the URL: {url}")
+            else:
+                print(f"Failed to fetch the URL: {url} with status code {response.status_code}")
+                continue
 
-#     body_text = soup.get_text()
-#     body_text = body_text.replace("\n", " ").replace("\t", " ").replace("  ", " ")
-#     body_text = body_text.strip()
-#     body_text = body_text.split(". ")
-#     body_text = ".\n".join(body_text)
+            # Parse the HTML content using BeautifulSoup
+            soup = BeautifulSoup(response.content, 'html.parser')
 
-#     image_links = [img['src'] for img in soup.find_all('img', src=True)]
+            # Remove all <a> tags
+            for a in soup.find_all('a'):
+                a.decompose()
 
-#     return url, title, body_text, image_links
+            # Remove ads and other unwanted elements
+            for unwanted in soup.find_all(['script', 'style', 'aside', 'footer', 'header', 'nav']):
+                unwanted.decompose()
 
-# def scrape_and_save():
-#     result = []
+            # Remove "Recommended articles" section
+            for unwanted in soup.find_all(['div', 'section'], {'class': ['bw-wrapper']}):
+                unwanted.decompose()
 
-#     my_set = set(king_url)
-#     for url in my_set:
-#         result.append(process_url(url))
+            for unwanted in soup.find_all('h2', string="Recommended articles"):
+                unwanted.decompose()
 
-#     with open("output.txt", "w", encoding="utf-8") as f:
-#         for data in result:
-#             f.write(f"URL: {data[0]}\n")
-#             f.write(f"Title: {data[1]}\n")
-#             f.write(f"Content:\n{data[2]}\n")
-#             f.write("Image Links:\n")
-#             for link in data[3]:
-#                 f.write(f"{link}\n")
-#             f.write("\n\n")
+            # Extract the title
+            title_element = soup.find(lambda tag: tag.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'title'])
+            title = title_element.text if title_element else "No title found"
 
-#     print("Data saved to output.txt")
+            # Extract the body text and clean it up
+            body_text = soup.get_text(separator=' ').strip()
 
-# # Example usage:
-# if __name__ == "__main__":
-#     scrape_and_save()
+            # Remove extra spaces and newlines
+            body_text = ' '.join(body_text.split())
+
+            # Split body text into sentences and join with new lines for better readability
+            body_text = body_text.split('. ')
+            body_text = '.\n'.join(body_text)
+
+            # Extract image links
+            image_links = [img['src'] for img in soup.find_all('img', src=True)]
+            image_links_str = ', '.join(image_links)
+
+            # Insert data into Supabase
+            created_at = datetime.utcnow() - timedelta(hours=2)
+            data = supabase.table("scrapperDB").insert({
+                "created_at": str(created_at),
+                "title": title,
+                "content": body_text,
+                "image_link": image_links_str,
+                "url": url
+            }).execute()
+
+        print("Scraping completed and results saved to the database.")
+
+    except Exception as e:
+        print(f"Error while processing URLs: {e}")
