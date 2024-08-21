@@ -1,0 +1,118 @@
+
+/* Global Styles */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
+    background: linear-gradient(135deg, #f0f0f0, #e1e1e1); /* Light gradient background for subtle elegance */
+    color: #333; /* Default text color */
+  }
+  
+  /* App Container */
+  .App {
+    text-align: center;
+    padding-top: 60px; /* Padding to prevent content from being hidden behind the fixed navbar */
+  }
+  
+  /* Navbar Styles */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 15px 20px;
+    background-color: #232f3e; /* Amazon's dark blue background */
+    color: #ffffff; /* White text color for contrast */
+    border-bottom: 2px solid #37475a; /* Slightly lighter border for distinction */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000; /* Ensures navbar is above other content */
+    display: flex;
+    justify-content: center;
+    gap: 15px; /* Space between links */
+  }
+  
+  nav a {
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 500; /* Slightly bolder text for better visibility */
+    transition: color 0.3s; /* Smooth transition effect for hover */
+  }
+  
+  nav a:hover {
+    color: #f5a623; /* Amazon's orange color on hover for a vibrant effect */
+  }
+  
+  /* Main Content Styles */
+  .container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+    background-color: #ffffff; /* White background for content area */
+    border-radius: 8px; /* Rounded corners for a modern look */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow for depth */
+  }
+  
+  /* Card Styles */
+  .card {
+    background-color: #ffffff; /* White background for cards */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .card-title {
+    color: #232f3e; /* Dark blue for card titles */
+    font-size: 22px;
+    margin-bottom: 15px;
+  }
+  
+  .card-content {
+    color: #333; /* Dark gray for card content */
+    font-size: 16px;
+  }
+  
+  /* Buttons */
+  button {
+    background-color: #f5a623; /* Amazon's orange color for buttons */
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+  }
+  
+  button:hover {
+    background-color: #e59400; /* Slightly darker orange for hover effect */
+  }
+  
+  /* Utility Classes */
+  .center {
+    text-align: center;
+  }
+  
+  .mt-20 {
+    margin-top: 20px;
+  }
+  
+  .mb-20 {
+    margin-bottom: 20px;
+  }
+  
+  .bg-light {
+    background-color: #f8f9fa;
+  }
+  
+  .rounded {
+    border-radius: 8px;
+  }
+  
+  .text-primary {
+    color: #232f3e; /* Primary text color */
+  }
+  
+  .text-secondary {
+    color: #f5a623; /* Secondary text color */
+  }

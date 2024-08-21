@@ -1,9 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from tools import web_scraper, scrape_single_page, extract_media_from_single_page, multiple_page_media
 from models import ScrapedBaseUrl, Output
-from scrapper.AllUrlsScrape import ScraperKING
 from fetch_db import fetch_data
-
 app = FastAPI()
 
 # Add CORS middleware
@@ -15,18 +14,46 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all HTTP headers
 )
 
-scraper_king = ScraperKING(link_limit=10000000000)  # Set the link limit here
-
 @app.post("/scrape/", response_model=Output)
 async def scrape_endpoint(scrapper_url: ScrapedBaseUrl):
     try:
-        whitelist = scrapper_url.whitelist if scrapper_url.whitelist is not None else []
-        blacklist = scrapper_url.blacklist if scrapper_url.blacklist is not None else []
+        result = await web_scraper(
+            url=scrapper_url.url, 
+            whitelist=",".join(scrapper_url.whitelist), 
+            blacklist=",".join(scrapper_url.blacklist)
+        )
+        return Output(all_links=result["memory"]["scrapedLinks"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        scraped_data = scraper_king.scrape_website_links(scrapper_url.url, whitelist, blacklist)
-        return scraped_data
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+@app.post("/scrape_single_page/")
+async def scrape_single_page_endpoint(scrapper_url: ScrapedBaseUrl):
+    try:
+        result = await scrape_single_page(url=scrapper_url.url)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/single_page_media/")
+async def single_page_media_endpoint(scrapper_url: ScrapedBaseUrl):
+    try:
+        result = await extract_media_from_single_page(url=scrapper_url.url)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/multiple_page_media/")
+async def multiple_page_media_endpoint(scrapper_url: ScrapedBaseUrl):
+    try:
+        result = await multiple_page_media(
+            url=scrapper_url.url, 
+            whitelist=",".join(scrapper_url.whitelist), 
+            blacklist=",".join(scrapper_url.blacklist)
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/fetch/")
 async def fetch_endpoint(url: str):
